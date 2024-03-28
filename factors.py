@@ -1,49 +1,38 @@
 #!/usr/bin/env python3
 
 import sys
-import signal
+import ctypes
+from resource import getrusage as resource_usage, RUSAGE_SELF
+from time import time as timestamp
 
-def factorize(n):
-    factors = []
-    # Start from 2 and iterate up to the square root of n
-    for i in range(2, int(n ** 0.5) + 1):
-        # If i divides n, add i and n//i to factors
-        while n % i == 0:
-            factors.append(i)
-            n //= i
-    # If n is prime and greater than 1, add n to factors
-    if n > 1:
-        factors.append(n)
-    return factors
+def unix_time(function):
+    '''Return `real`, `sys`, and `user` elapsed time, like UNIX's command `time`.
+    You can calculate the amount of CPU time used by summing `user` and `sys`.
+    `real` is similar to the wall clock.
+    Note: Resolutions of `user` and `sys` are limited by the OS's software clock.
+    '''
+    start_time, start_resources = timestamp(), resource_usage(RUSAGE_SELF)
+    function()
+    end_resources, end_time = resource_usage(RUSAGE_SELF), timestamp()
+    return "\nreal: {}\nuser: {}\nsys: {}".format(
+        end_time - start_time,
+        end_resources.ru_utime - start_resources.ru_utime,
+        end_resources.ru_stime - start_resources.ru_stime)
 
-def handler(signum, frame):
-    print("Time limit exceeded. Exiting.")
-    sys.exit(1)
+def print_factors():
+    fun = ctypes.CDLL("./lib_factors.so")
+    fun.trial_division.argtypes = [ctypes.c_long]
+    
+    with open(sys.argv[1], 'r') as prime:
+        line = prime.readline()
+        while line != '':
+            n = int(line.strip())
+            fun.trial_division(n)
+            line = prime.readline()
 
-def main():
+if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: ./factors.py <file>")
         sys.exit(1)
 
-    signal.signal(signal.SIGALRM, handler)
-    signal.alarm(15)  # Set a timeout of 15 seconds
-
-    input_file = sys.argv[1]
-    try:
-        with open(input_file, 'r') as file:
-            for line in file:
-                n = int(line.strip())
-                factors = factorize(n)
-                # Output factorization in the format "n=p*q"
-                print(f"{n}={'*'.join(map(str, factors))}")
-    except FileNotFoundError:
-        print(f"File {input_file} not found.")
-        sys.exit(1)
-    except KeyboardInterrupt:
-        print("Keyboard interrupt. Exiting.")
-        sys.exit(1)
-    finally:
-        signal.alarm(0)  # Disable the timeout
-
-if __name__ == "__main__":
-    main()
+    print(unix_time(print_factors))
