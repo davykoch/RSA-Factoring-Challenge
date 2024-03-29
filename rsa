@@ -1,54 +1,25 @@
 #!/usr/bin/env python3
 
 import sys
-import random
-
-
-def gcd(a, b):
-    while b:
-        a, b = b, a % b
-    return a
-
-
-def pollard_rho(n, max_iterations=1000):
-    if n % 2 == 0:
-        return 2
-    x = random.randint(1, n-1)
-    y = x
-    c = random.randint(1, n-1)
-    d = 1
-    iterations = 0
-    while d == 1 and iterations < max_iterations:
-        x = (pow(x, 2, n) + c) % n
-        y = (pow(y, 2, n) + c) % n
-        y = (pow(y, 2, n) + c) % n
-        d = gcd(abs(x - y), n)
-        if d == n:
-            # Retry with a new random x
-            x = random.randint(1, n-1)
-            y = x
-            c = random.randint(1, n-1)
-        iterations += 1
-    return d if d != n else pollard_rho(n, max_iterations)
-
 
 def factorize(n):
     """
     Factorize the given number n into its prime factors.
     """
     factors = []
+    divisor = 2
     while n > 1:
-        factor = pollard_rho(n)
-        factors.append(factor)
-        n //= factor
+        while n % divisor == 0:
+            factors.append(divisor)
+            n //= divisor
+        divisor += 1
     return factors
-
 
 def main():
     if len(sys.argv) != 2:
         print("Usage: ./rsa <file>")
         sys.exit(1)
-
+    
     input_file = sys.argv[1]
     try:
         with open(input_file, 'r') as file:
@@ -63,7 +34,6 @@ def main():
     except ValueError:
         print("Invalid input. Please provide a valid number.")
         sys.exit(1)
-
 
 if __name__ == "__main__":
     main()
