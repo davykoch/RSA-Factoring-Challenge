@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+
+import sys
+
+def factorize(n):
+    """
+    Factorize the given number n into its prime factors.
+    """
+    factors = []
+    divisor = 2
+    while n > 1:
+        while n % divisor == 0:
+            factors.append(divisor)
+            n //= divisor
+        divisor += 1
+    return factors
+
+def main():
+    if len(sys.argv) != 2:
+        print("Usage: ./rsa <file>")
+        sys.exit(1)
+    
+    input_file = sys.argv[1]
+    try:
+        with open(input_file, 'r') as file:
+            for line in file:
+                n = int(line.strip())
+                factors = factorize(n)
+                # Output factorization in the format "n=p*q"
+                print(f"{n}={'*'.join(map(str, factors))}")
+    except FileNotFoundError:
+        print(f"File {input_file} not found.")
+        sys.exit(1)
+    except ValueError:
+        print("Invalid input. Please provide a valid number.")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
